@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,18 +8,65 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowRight, Mail, Lock, User } from "lucide-react";
+import { ArrowRight, Mail, Lock, User, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const LoginPage = () => {
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  if (user) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementar lógica de autenticação
-    console.log({ email, password, name, isLogin });
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("E-mail ou senha incorretos");
+          } else {
+            toast.error(error.message);
+          }
+        } else {
+          toast.success("Bem-vinda de volta!");
+          navigate("/dashboard");
+        }
+      } else {
+        if (password.length < 6) {
+          toast.error("A senha deve ter pelo menos 6 caracteres");
+          setIsLoading(false);
+          return;
+        }
+        
+        const { error } = await signUp(email, password, name);
+        if (error) {
+          if (error.message.includes("User already registered")) {
+            toast.error("Este e-mail já está cadastrado");
+          } else {
+            toast.error(error.message);
+          }
+        } else {
+          toast.success("Conta criada com sucesso!");
+          navigate("/dashboard");
+        }
+      }
+    } catch (err) {
+      toast.error("Ocorreu um erro. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,6 +109,7 @@ const LoginPage = () => {
                           onChange={(e) => setName(e.target.value)}
                           className="pl-10"
                           required
+                          disabled={isLoading}
                         />
                       </div>
                     </div>
@@ -78,6 +127,7 @@ const LoginPage = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         className="pl-10"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -94,6 +144,8 @@ const LoginPage = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         className="pl-10"
                         required
+                        minLength={6}
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -101,7 +153,7 @@ const LoginPage = () => {
                   {isLogin && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="remember" />
+                        <Checkbox id="remember" disabled={isLoading} />
                         <Label htmlFor="remember" className="text-sm font-normal">
                           Lembrar de mim
                         </Label>
@@ -114,7 +166,7 @@ const LoginPage = () => {
 
                   {!isLogin && (
                     <div className="flex items-start space-x-2">
-                      <Checkbox id="terms" required />
+                      <Checkbox id="terms" required disabled={isLoading} />
                       <Label htmlFor="terms" className="text-sm font-normal">
                         Concordo com os{" "}
                         <Link to="/termos" className="text-primary hover:underline">
@@ -128,9 +180,18 @@ const LoginPage = () => {
                     </div>
                   )}
 
-                  <Button type="submit" className="w-full" size="lg">
-                    {isLogin ? "Entrar" : "Criar conta"}
-                    <ArrowRight size={16} />
+                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        {isLogin ? "Entrando..." : "Criando conta..."}
+                      </>
+                    ) : (
+                      <>
+                        {isLogin ? "Entrar" : "Criar conta"}
+                        <ArrowRight size={16} />
+                      </>
+                    )}
                   </Button>
                 </form>
 
@@ -142,6 +203,7 @@ const LoginPage = () => {
                       type="button"
                       onClick={() => setIsLogin(!isLogin)}
                       className="text-primary hover:underline font-medium"
+                      disabled={isLoading}
                     >
                       {isLogin ? "Cadastre-se" : "Faça login"}
                     </button>
