@@ -1,62 +1,51 @@
+import { useEffect, useState } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import TrackCard from "@/components/trilhas/TrackCard";
 import { Code, Database, Smartphone, BarChart3, Palette } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const tracks = [
-  {
-    id: "frontend",
-    title: "Front-end",
-    description: "Domine HTML, CSS, JavaScript e React para criar interfaces incríveis e acessíveis. Aprenda as melhores práticas de desenvolvimento web moderno.",
-    icon: <Code size={28} />,
-    coursesCount: 8,
-    duration: "3 meses",
-    studentsCount: 450,
-    color: "coral" as const,
-  },
-  {
-    id: "backend",
-    title: "Back-end",
-    description: "Aprenda Node.js, APIs REST, bancos de dados e arquitetura de sistemas. Construa aplicações robustas e escaláveis.",
-    icon: <Database size={28} />,
-    coursesCount: 7,
-    duration: "3 meses",
-    studentsCount: 320,
-    color: "purple" as const,
-  },
-  {
-    id: "mobile",
-    title: "Mobile",
-    description: "Desenvolva aplicativos para Android e iOS com React Native e Flutter. Crie experiências mobile incríveis.",
-    icon: <Smartphone size={28} />,
-    coursesCount: 6,
-    duration: "3 meses",
-    studentsCount: 180,
-    color: "warm" as const,
-  },
-  {
-    id: "dados",
-    title: "Dados",
-    description: "Análise de dados, Python, SQL e visualização para tomada de decisões. Transforme dados em insights valiosos.",
-    icon: <BarChart3 size={28} />,
-    coursesCount: 6,
-    duration: "3 meses",
-    studentsCount: 210,
-    color: "coral" as const,
-  },
-  {
-    id: "ux-design",
-    title: "UX & Design",
-    description: "Design de interfaces, pesquisa com usuários e prototipagem com Figma. Crie produtos centrados no usuário.",
-    icon: <Palette size={28} />,
-    coursesCount: 5,
-    duration: "2 meses",
-    studentsCount: 290,
-    color: "purple" as const,
-  },
-];
+const iconMap: Record<string, React.ReactNode> = {
+  code: <Code size={28} />,
+  database: <Database size={28} />,
+  smartphone: <Smartphone size={28} />,
+  chart: <BarChart3 size={28} />,
+  palette: <Palette size={28} />,
+};
+
+interface Track {
+  id: string;
+  title: string;
+  description: string | null;
+  slug: string;
+  duration: string | null;
+  color: string;
+  icon: string | null;
+}
 
 const TrilhasPage = () => {
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTracks = async () => {
+      const { data, error } = await supabase
+        .from("tracks")
+        .select("*")
+        .order("order_index");
+
+      if (error) {
+        console.error("Error fetching tracks:", error);
+      } else {
+        setTracks(data || []);
+      }
+      setLoading(false);
+    };
+
+    fetchTracks();
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -75,9 +64,25 @@ const TrilhasPage = () => {
 
           {/* Tracks Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tracks.map((track) => (
-              <TrackCard key={track.id} {...track} />
-            ))}
+            {loading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-64 rounded-2xl" />
+              ))
+            ) : (
+              tracks.map((track) => (
+                <TrackCard
+                  key={track.id}
+                  id={track.slug}
+                  title={track.title}
+                  description={track.description || ""}
+                  icon={iconMap[track.icon || "code"] || <Code size={28} />}
+                  coursesCount={0}
+                  duration={track.duration || ""}
+                  studentsCount={0}
+                  color={track.color as "coral" | "purple" | "warm"}
+                />
+              ))
+            )}
           </div>
 
           {/* Info Section */}

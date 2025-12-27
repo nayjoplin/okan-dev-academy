@@ -1,70 +1,115 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CourseCard from "@/components/trilhas/CourseCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Clock, BookOpen, Award, Users } from "lucide-react";
+import { ArrowLeft, Clock, BookOpen, Award } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Dados mockados para exemplo
-const trackData = {
-  frontend: {
-    title: "Front-end",
-    description: "Domine HTML, CSS, JavaScript e React para criar interfaces incríveis e acessíveis.",
-    totalHours: "120h",
-    courses: [
-      {
-        id: "html-css",
-        title: "HTML & CSS Fundamentals",
-        description: "Aprenda as bases da web com HTML semântico e CSS moderno.",
-        modulesCount: 8,
-        duration: "15h",
-        progress: 100,
-        isCompleted: true,
-      },
-      {
-        id: "javascript",
-        title: "JavaScript do Zero ao Avançado",
-        description: "Domine a linguagem mais usada na web, desde variáveis até async/await.",
-        modulesCount: 12,
-        duration: "25h",
-        progress: 65,
-      },
-      {
-        id: "react",
-        title: "React: Construindo Interfaces",
-        description: "Crie aplicações modernas com React, hooks e gerenciamento de estado.",
-        modulesCount: 10,
-        duration: "20h",
-        progress: 0,
-      },
-      {
-        id: "typescript",
-        title: "TypeScript para React",
-        description: "Adicione tipagem ao seu código e aumente a qualidade do seu desenvolvimento.",
-        modulesCount: 6,
-        duration: "12h",
-        isLocked: true,
-      },
-      {
-        id: "tailwind",
-        title: "Tailwind CSS na Prática",
-        description: "Estilize suas aplicações de forma rápida e consistente com Tailwind.",
-        modulesCount: 5,
-        duration: "10h",
-        isLocked: true,
-      },
-    ],
-  },
-};
+interface Track {
+  id: string;
+  title: string;
+  description: string | null;
+  slug: string;
+  duration: string | null;
+}
+
+interface Course {
+  id: string;
+  title: string;
+  description: string | null;
+  slug: string;
+  duration: string | null;
+}
 
 const TrackDetailPage = () => {
   const { trackId } = useParams();
-  const track = trackData[trackId as keyof typeof trackData] || trackData.frontend;
-  
-  const completedCourses = track.courses.filter(c => c.isCompleted).length;
-  const totalCourses = track.courses.length;
-  const overallProgress = Math.round((completedCourses / totalCourses) * 100);
+  const [track, setTrack] = useState<Track | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrackAndCourses = async () => {
+      // Fetch track by slug
+      const { data: trackData, error: trackError } = await supabase
+        .from("tracks")
+        .select("*")
+        .eq("slug", trackId)
+        .maybeSingle();
+
+      if (trackError) {
+        console.error("Error fetching track:", trackError);
+        setLoading(false);
+        return;
+      }
+
+      setTrack(trackData);
+
+      if (trackData) {
+        // Fetch courses for this track
+        const { data: coursesData, error: coursesError } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("track_id", trackData.id)
+          .order("order_index");
+
+        if (coursesError) {
+          console.error("Error fetching courses:", coursesError);
+        } else {
+          setCourses(coursesData || []);
+        }
+      }
+
+      setLoading(false);
+    };
+
+    fetchTrackAndCourses();
+  }, [trackId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 pt-24 pb-16">
+          <div className="container mx-auto px-4">
+            <Skeleton className="h-8 w-40 mb-6" />
+            <Skeleton className="h-64 rounded-2xl mb-8" />
+            <Skeleton className="h-8 w-48 mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-48 rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!track) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 pt-24 pb-16">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="text-2xl font-bold mb-4">Trilha não encontrada</h1>
+            <Button asChild>
+              <Link to="/trilhas">Voltar para trilhas</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const totalCourses = courses.length;
+  const completedCourses = 0; // Will be dynamic when user progress is implemented
+  const overallProgress = totalCourses > 0 ? Math.round((completedCourses / totalCourses) * 100) : 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -93,7 +138,7 @@ const TrackDetailPage = () => {
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2 text-sm">
                   <Clock size={16} className="text-primary" />
-                  <span>{track.totalHours} de conteúdo</span>
+                  <span>{track.duration || "0h"} de conteúdo</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <BookOpen size={16} className="text-primary" />
@@ -122,30 +167,40 @@ const TrackDetailPage = () => {
           {/* Courses List */}
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4">Cursos da trilha</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {track.courses.map((course) => (
-                <CourseCard
-                  key={course.id}
-                  id={course.id}
-                  trackId={trackId || "frontend"}
-                  {...course}
-                />
-              ))}
-            </div>
+            {courses.length === 0 ? (
+              <p className="text-muted-foreground">Nenhum curso disponível nesta trilha ainda.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {courses.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    id={course.slug}
+                    trackId={trackId || ""}
+                    title={course.title}
+                    description={course.description || ""}
+                    modulesCount={0}
+                    duration={course.duration || "0h"}
+                    progress={0}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* CTA */}
-          <div className="bg-secondary/10 rounded-2xl p-6 md:p-8 text-center">
-            <h3 className="text-xl font-bold mb-2">Continue sua jornada!</h3>
-            <p className="text-muted-foreground mb-4">
-              Você está no caminho certo. Continue estudando e desbloqueie novos cursos.
-            </p>
-            <Button asChild>
-              <Link to={`/trilhas/${trackId}/cursos/javascript`}>
-                Continuar estudando
-              </Link>
-            </Button>
-          </div>
+          {courses.length > 0 && (
+            <div className="bg-secondary/10 rounded-2xl p-6 md:p-8 text-center">
+              <h3 className="text-xl font-bold mb-2">Continue sua jornada!</h3>
+              <p className="text-muted-foreground mb-4">
+                Você está no caminho certo. Continue estudando e desbloqueie novos cursos.
+              </p>
+              <Button asChild>
+                <Link to={`/trilhas/${trackId}/cursos/${courses[0].slug}`}>
+                  Começar a estudar
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </main>
 
