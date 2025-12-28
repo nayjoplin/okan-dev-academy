@@ -22,6 +22,8 @@ import StudentCourses from "./pages/app/StudentCourses";
 import StudentTracks from "./pages/app/StudentTracks";
 import StudentCertificates from "./pages/app/StudentCertificates";
 import StudentCommunity from "./pages/app/StudentCommunity";
+import CourseView from "./pages/app/CourseView";
+import LessonPlayer from "./pages/app/LessonPlayer";
 
 // Mentor pages
 import MentorDashboard from "./pages/mentor/MentorDashboard";
@@ -32,6 +34,11 @@ import MentorAnalytics from "./pages/mentor/MentorAnalytics";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminTracks from "./pages/admin/AdminTracks";
+import AdminCourses from "./pages/admin/AdminCourses";
+import AdminModules from "./pages/admin/AdminModules";
+import AdminLessons from "./pages/admin/AdminLessons";
+import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 
 const queryClient = new QueryClient();
@@ -59,6 +66,8 @@ const App = () => (
             {/* Student Routes */}
             <Route path="/app" element={<RoleRoute allowedRoles={["student", "mentor", "admin"]}><StudentDashboard /></RoleRoute>} />
             <Route path="/app/cursos" element={<RoleRoute allowedRoles={["student", "mentor", "admin"]}><StudentCourses /></RoleRoute>} />
+            <Route path="/app/cursos/:courseId" element={<RoleRoute allowedRoles={["student", "mentor", "admin"]}><CourseView /></RoleRoute>} />
+            <Route path="/app/cursos/:courseId/aula/:lessonId" element={<RoleRoute allowedRoles={["student", "mentor", "admin"]}><LessonPlayer /></RoleRoute>} />
             <Route path="/app/trilhas" element={<RoleRoute allowedRoles={["student", "mentor", "admin"]}><StudentTracks /></RoleRoute>} />
             <Route path="/app/certificados" element={<RoleRoute allowedRoles={["student", "mentor", "admin"]}><StudentCertificates /></RoleRoute>} />
             <Route path="/app/comunidade" element={<RoleRoute allowedRoles={["student", "mentor", "admin"]}><StudentCommunity /></RoleRoute>} />
@@ -72,10 +81,12 @@ const App = () => (
 
             {/* Admin Routes */}
             <Route path="/admin" element={<RoleRoute allowedRoles={["admin"]}><AdminDashboard /></RoleRoute>} />
-            <Route path="/admin/trilhas" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Trilhas" description="Gerencie as trilhas de aprendizado" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Trilhas" }]} /></RoleRoute>} />
-            <Route path="/admin/cursos" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Cursos" description="Gerencie os cursos" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Cursos" }]} /></RoleRoute>} />
-            <Route path="/admin/aulas" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Aulas" description="Gerencie as aulas" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Aulas" }]} /></RoleRoute>} />
-            <Route path="/admin/usuarios" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Usuários" description="Gerencie os usuários" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Usuários" }]} /></RoleRoute>} />
+            <Route path="/admin/trilhas" element={<RoleRoute allowedRoles={["admin"]}><AdminTracks /></RoleRoute>} />
+            <Route path="/admin/cursos" element={<RoleRoute allowedRoles={["admin"]}><AdminCourses /></RoleRoute>} />
+            <Route path="/admin/cursos/:courseId/modulos" element={<RoleRoute allowedRoles={["admin"]}><AdminModules /></RoleRoute>} />
+            <Route path="/admin/modulos/:moduleId/aulas" element={<RoleRoute allowedRoles={["admin"]}><AdminLessons /></RoleRoute>} />
+            <Route path="/admin/usuarios" element={<RoleRoute allowedRoles={["admin"]}><AdminUsers /></RoleRoute>} />
+            <Route path="/admin/aulas" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Aulas" description="Gerencie aulas pelo menu de cursos" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Aulas" }]} /></RoleRoute>} />
             <Route path="/admin/certificados" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Certificados" description="Gerencie os certificados" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Certificados" }]} /></RoleRoute>} />
             <Route path="/admin/relatorios" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Relatórios" description="Visualize relatórios" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Relatórios" }]} /></RoleRoute>} />
             <Route path="/admin/configuracoes" element={<RoleRoute allowedRoles={["admin"]}><AdminPlaceholder title="Configurações" description="Configure a plataforma" breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Configurações" }]} /></RoleRoute>} />
